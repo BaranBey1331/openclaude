@@ -473,11 +473,16 @@ function createCompactionResultFromSessionMemory(
     summaryContent += `\n\nSome session memory sections were truncated for length. The full session memory can be viewed at: ${memoryPath}`
   }
 
+  const estPostTokens = estimateMessageTokens([
+    createUserMessage({ content: summaryContent }),
+  ]) + estimateMessageTokens(messagesToKeep);
+  const savedTokens = Math.max(0, (preCompactTokenCount ?? 0) - estPostTokens);
   const summaryMessages = [
     createUserMessage({
       content: summaryContent,
       isCompactSummary: true,
       isVisibleInTranscriptOnly: true,
+      userDisplayMessage: `✨ Session memory compacted: ~${formatNumber(savedTokens)} tokens saved.`,
     }),
   ]
 

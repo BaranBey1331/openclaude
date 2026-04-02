@@ -399,11 +399,23 @@ function convertChunkUsage(
 ): Partial<AnthropicUsage> | undefined {
   if (!usage) return undefined
 
+  // Handle various provider-specific usage field names
+  const promptTokens = usage.prompt_tokens ?? (usage as any).prompt_token_count ?? 0
+  const completionTokens = usage.completion_tokens ?? (usage as any).candidates_token_count ?? 0
+
+  // Cache read tokens: OpenAI/DeepSeek standard is prompt_tokens_details.cached_tokens
+  let cachedTokens = usage.prompt_tokens_details?.cached_tokens ?? 0
+
+  // Gemini/Vertex AI often uses different fields
+  if (!cachedTokens && (usage as any).cache_read_input_tokens) {
+    cachedTokens = (usage as any).cache_read_input_tokens
+  }
+
   return {
-    input_tokens: usage.prompt_tokens ?? 0,
-    output_tokens: usage.completion_tokens ?? 0,
-    cache_creation_input_tokens: 0,
-    cache_read_input_tokens: usage.prompt_tokens_details?.cached_tokens ?? 0,
+    input_tokens: promptTokens,
+    output_tokens: completionTokens,
+    cache_creation_input_tokens: (usage as any).cache_creation_input_tokens ?? 0,
+    cache_read_input_tokens: cachedTokens,
   }
 }
 
@@ -1014,10 +1026,10 @@ class OpenAIShimMessages {
       stop_reason: stopReason,
       stop_sequence: null,
       usage: {
-        input_tokens: data.usage?.prompt_tokens ?? 0,
-        output_tokens: data.usage?.completion_tokens ?? 0,
-        cache_creation_input_tokens: 0,
-        cache_read_input_tokens: data.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+        input_tokens: data.usage?.prompt_tokens ?? (data.usage as any)?.prompt_token_count ?? 0,
+        output_tokens: data.usage?.completion_tokens ?? (data.usage as any)?.candidates_token_count ?? 0,
+        cache_creation_input_tokens: (data.usage as any)?.cache_creation_input_tokens ?? 0,
+        cache_read_input_tokens: data.usage?.prompt_tokens_details?.cached_tokens ?? (data.usage as any)?.cache_read_input_tokens ?? 0,
       },
     }
   }

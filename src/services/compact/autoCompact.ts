@@ -72,8 +72,14 @@ const MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3
 export function getAutoCompactThreshold(model: string): number {
   const effectiveContextWindow = getEffectiveContextWindowSize(model)
 
+  // Dynamic buffer: for large context models (>128k), use a larger buffer
+  // to prevent sudden context overflows during large file edits/reads.
+  const buffer = effectiveContextWindow > 130000
+    ? Math.max(AUTOCOMPACT_BUFFER_TOKENS, Math.floor(effectiveContextWindow * 0.1))
+    : AUTOCOMPACT_BUFFER_TOKENS;
+
   const autocompactThreshold =
-    effectiveContextWindow - AUTOCOMPACT_BUFFER_TOKENS
+    effectiveContextWindow - buffer
 
   // Override for easier testing of autocompact
   const envPercent = process.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE
