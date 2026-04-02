@@ -155,7 +155,7 @@ export async function getAnthropicClient({
     }),
   }
   if (
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_OPENAI) ||
+    isEnvTruthy(process.env.CLAUDE_CODE_USE_OPENAI) || isEnvTruthy(process.env.CLAUDE_CODE_USE_GROQ) || isEnvTruthy(process.env.CLAUDE_CODE_USE_GEMINI) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_GITHUB)
   ) {
     const { createOpenAIShimClient } = await import('./openaiShim.js')
@@ -320,7 +320,7 @@ export async function getAnthropicClient({
 
   // Determine authentication method based on available tokens
   const clientConfig: ConstructorParameters<typeof Anthropic>[0] = {
-    apiKey: isClaudeAISubscriber() ? null : apiKey || getAnthropicApiKey(),
+    apiKey: (isClaudeAISubscriber() ? null : apiKey || getAnthropicApiKey()) || "none",
     authToken: isClaudeAISubscriber()
       ? getClaudeAIOAuthTokens()?.accessToken
       : undefined,

@@ -1056,25 +1056,25 @@ export function createOpenAIShimClient(options: {
   // When Gemini provider is active, map Gemini env vars to OpenAI-compatible ones
   // so the existing providerConfig.ts infrastructure picks them up correctly.
   if (isEnvTruthy(process.env.CLAUDE_CODE_USE_GROQ)) {
-    process.env.OPENAI_BASE_URL ??=
+    if (!process.env.OPENAI_BASE_URL) process.env.OPENAI_BASE_URL =
       process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1'
-    process.env.OPENAI_API_KEY ??= process.env.GROQ_API_KEY ?? ''
+    if (!process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY = process.env.GROQ_API_KEY ?? ''
     if (process.env.GROQ_MODEL && !process.env.OPENAI_MODEL) {
       process.env.OPENAI_MODEL = process.env.GROQ_MODEL
     }
   } else
   if (isEnvTruthy(process.env.CLAUDE_CODE_USE_GEMINI)) {
-    process.env.OPENAI_BASE_URL ??=
+    if (!process.env.OPENAI_BASE_URL) process.env.OPENAI_BASE_URL =
       process.env.GEMINI_BASE_URL ??
       'https://generativelanguage.googleapis.com/v1beta/openai'
-    process.env.OPENAI_API_KEY ??=
+    if (!process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY =
       process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? ''
     if (process.env.GEMINI_MODEL && !process.env.OPENAI_MODEL) {
       process.env.OPENAI_MODEL = process.env.GEMINI_MODEL
     }
   } else if (isEnvTruthy(process.env.CLAUDE_CODE_USE_GITHUB)) {
-    process.env.OPENAI_BASE_URL ??= GITHUB_MODELS_DEFAULT_BASE
-    process.env.OPENAI_API_KEY ??=
+    if (!process.env.OPENAI_BASE_URL) process.env.OPENAI_BASE_URL = GITHUB_MODELS_DEFAULT_BASE
+    if (!process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY =
       process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? ''
   }
 
