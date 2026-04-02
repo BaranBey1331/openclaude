@@ -495,8 +495,7 @@ function OAuthStatusMessage(t0) {
               <Text>· Guided setup inside OpenClaude:{"\n"}{"  "}/provider</Text>
               <Text>· OpenAI / any OpenAI-compatible provider (GPT-4o, DeepSeek, Ollama):{"\n"}{"  "}CLAUDE_CODE_USE_OPENAI=1  OPENAI_API_KEY=sk-...  OPENAI_MODEL=gpt-4o</Text>
               <Text>· Google Gemini (free key at https://aistudio.google.com/apikey):{"\n"}{"  "}CLAUDE_CODE_USE_GEMINI=1  GEMINI_API_KEY=your-key</Text>
-              <Text>· Groq (keys at https://console.groq.com/keys):{"
-"}{"  "}CLAUDE_CODE_USE_GROQ=1  GROQ_API_KEY=gsk_...  GROQ_MODEL=qwen/qwen3-32b</Text>
+              <Text>· Groq (keys at https://console.groq.com/keys):{"\n"}{"  "}CLAUDE_CODE_USE_GROQ=1  GROQ_API_KEY=gsk_...  GROQ_MODEL=qwen/qwen3-32b</Text>
             {t5}{t6}<Text>· Vertex AI:{" "}<Link url="https://code.claude.com/docs/en/google-vertex-ai">https://code.claude.com/docs/en/google-vertex-ai</Link></Text></Box>;
           $[18] = t7;
         } else {
