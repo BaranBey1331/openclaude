@@ -34,16 +34,12 @@ import {
   type ShimCreateParams,
 } from './codexShim.js'
 import {
-  isLocalProviderUrl,
   resolveCodexApiCredentials,
   resolveProviderRequest,
 } from './providerConfig.js'
 import { redactSecretValueForDisplay } from '../../utils/providerProfile.js'
-import { sanitizeSchemaForOpenAICompat } from './openaiSchemaSanitizer.js'
-
-const GITHUB_MODELS_DEFAULT_BASE = 'https://models.github.ai/inference'
-const GITHUB_API_VERSION = '2022-11-28'
-const GITHUB_429_MAX_RETRIES = 3
+import { getModelProvider, getEnhancementPrompt } from "../../utils/model/modelEnhancements.js"
+import { sanitizeSchemaForOpenAICompat } from "./openaiSchemaSanitizer.js"
 const GITHUB_429_BASE_DELAY_SEC = 1
 const GITHUB_429_MAX_DELAY_SEC = 32
 
@@ -161,9 +157,14 @@ function convertMessages(
   system: unknown,
 ): OpenAIMessage[] {
   const result: OpenAIMessage[] = []
+  const provider = getModelProvider();
+  const enhancement = getEnhancementPrompt(provider);
 
   // System message first
-  const sysText = convertSystemPrompt(system)
+  let sysText = convertSystemPrompt(system)
+  if (enhancement) {
+    sysText = sysText ? `${sysText}\n\n${enhancement}` : enhancement;
+  }
   if (sysText) {
     result.push({ role: 'system', content: sysText })
   }
@@ -327,6 +328,7 @@ function convertTools(
   tools: Array<{ name: string; description?: string; input_schema?: Record<string, unknown> }>,
 ): OpenAITool[] {
   const isGemini = isEnvTruthy(process.env.CLAUDE_CODE_USE_GEMINI)
+  const isGroq = isEnvTruthy(process.env.CLAUDE_CODE_USE_GROQ)
 
   return tools
     .filter(t => t.name !== 'ToolSearchTool') // Not relevant for OpenAI
@@ -349,7 +351,7 @@ function convertTools(
         function: {
           name: t.name,
           description: t.description ?? '',
-          parameters: normalizeSchemaForOpenAI(schema, !isGemini),
+          parameters: normalizeSchemaForOpenAI(schema, !isGemini && !isGroq),
         },
       }
     })
