@@ -1041,6 +1041,14 @@ export function createOpenAIShimClient(options: {
 
   // When Gemini provider is active, map Gemini env vars to OpenAI-compatible ones
   // so the existing providerConfig.ts infrastructure picks them up correctly.
+  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_GROQ)) {
+    process.env.OPENAI_BASE_URL ??=
+      process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1'
+    process.env.OPENAI_API_KEY ??= process.env.GROQ_API_KEY ?? ''
+    if (process.env.GROQ_MODEL && !process.env.OPENAI_MODEL) {
+      process.env.OPENAI_MODEL = process.env.GROQ_MODEL
+    }
+  } else
   if (isEnvTruthy(process.env.CLAUDE_CODE_USE_GEMINI)) {
     process.env.OPENAI_BASE_URL ??=
       process.env.GEMINI_BASE_URL ??

@@ -12,6 +12,7 @@ const originalEnv = {
   CLAUDE_CODE_USE_BEDROCK: process.env.CLAUDE_CODE_USE_BEDROCK,
   CLAUDE_CODE_USE_VERTEX: process.env.CLAUDE_CODE_USE_VERTEX,
   CLAUDE_CODE_USE_FOUNDRY: process.env.CLAUDE_CODE_USE_FOUNDRY,
+  CLAUDE_CODE_USE_GROQ: process.env.CLAUDE_CODE_USE_GROQ,
 }
 
 afterEach(() => {
@@ -21,6 +22,7 @@ afterEach(() => {
   process.env.CLAUDE_CODE_USE_BEDROCK = originalEnv.CLAUDE_CODE_USE_BEDROCK
   process.env.CLAUDE_CODE_USE_VERTEX = originalEnv.CLAUDE_CODE_USE_VERTEX
   process.env.CLAUDE_CODE_USE_FOUNDRY = originalEnv.CLAUDE_CODE_USE_FOUNDRY
+  process.env.CLAUDE_CODE_USE_GROQ = originalEnv.CLAUDE_CODE_USE_GROQ
 })
 
 function clearProviderEnv(): void {
@@ -30,6 +32,7 @@ function clearProviderEnv(): void {
   delete process.env.CLAUDE_CODE_USE_BEDROCK
   delete process.env.CLAUDE_CODE_USE_VERTEX
   delete process.env.CLAUDE_CODE_USE_FOUNDRY
+  delete process.env.CLAUDE_CODE_USE_GROQ
 }
 
 test('first-party provider keeps Anthropic account setup flow enabled', () => {
@@ -46,6 +49,7 @@ test.each([
   ['CLAUDE_CODE_USE_BEDROCK', 'bedrock'],
   ['CLAUDE_CODE_USE_VERTEX', 'vertex'],
   ['CLAUDE_CODE_USE_FOUNDRY', 'foundry'],
+  ['CLAUDE_CODE_USE_GROQ', 'groq'],
 ] as const)(
   '%s disables Anthropic account setup flow',
   (envKey, provider) => {
@@ -63,4 +67,12 @@ test('GEMINI takes precedence over GitHub when both are set', () => {
   process.env.CLAUDE_CODE_USE_GITHUB = '1'
 
   expect(getAPIProvider()).toBe('gemini')
+})
+
+test('GROQ takes precedence over OPENAI when both are set', () => {
+  clearProviderEnv()
+  process.env.CLAUDE_CODE_USE_GROQ = '1'
+  process.env.CLAUDE_CODE_USE_OPENAI = '1'
+
+  expect(getAPIProvider()).toBe('groq')
 })
