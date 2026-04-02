@@ -6,6 +6,10 @@ type FetchType = typeof globalThis.fetch
 const originalEnv = {
   OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  CLAUDE_CODE_USE_GROQ: process.env.CLAUDE_CODE_USE_GROQ,
+  GROQ_API_KEY: process.env.GROQ_API_KEY,
+  GROQ_BASE_URL: process.env.GROQ_BASE_URL,
+  GROQ_MODEL: process.env.GROQ_MODEL,
 }
 
 const originalFetch = globalThis.fetch
@@ -57,6 +61,10 @@ beforeEach(() => {
 afterEach(() => {
   process.env.OPENAI_BASE_URL = originalEnv.OPENAI_BASE_URL
   process.env.OPENAI_API_KEY = originalEnv.OPENAI_API_KEY
+  process.env.CLAUDE_CODE_USE_GROQ = originalEnv.CLAUDE_CODE_USE_GROQ
+  process.env.GROQ_API_KEY = originalEnv.GROQ_API_KEY
+  process.env.GROQ_BASE_URL = originalEnv.GROQ_BASE_URL
+  process.env.GROQ_MODEL = originalEnv.GROQ_MODEL
   globalThis.fetch = originalFetch
 })
 
@@ -134,6 +142,32 @@ test('preserves usage from final OpenAI stream chunk with empty choices', async 
   expect(usageEvent).toBeDefined()
   expect(usageEvent?.usage?.input_tokens).toBe(123)
   expect(usageEvent?.usage?.output_tokens).toBe(45)
+})
+
+test('maps Groq env vars to OpenAI shim', async () => {
+  delete process.env.OPENAI_BASE_URL
+  delete process.env.OPENAI_API_KEY
+  process.env.CLAUDE_CODE_USE_GROQ = '1'
+  process.env.GROQ_API_KEY = 'gsk_test'
+  process.env.GROQ_MODEL = 'llama-3.3-70b-versatile'
+
+  globalThis.fetch = (async (_input, _init) => {
+    const url = typeof _input === 'string' ? _input : _input.url
+    expect(url).toBe('https://api.groq.com/openai/v1/chat/completions')
+    const body = JSON.parse(String(_init?.body))
+    expect(body.model).toBe('llama-3.3-70b-versatile')
+    return new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }))
+  }) as FetchType
+
+  const client = createOpenAIShimClient({}) as OpenAIShimClient
+  await client.beta.messages.create({
+    model: 'fake-model',
+    messages: [{ role: 'user', content: 'hi' }],
+  })
+
+  expect(process.env.OPENAI_BASE_URL).toBe('https://api.groq.com/openai/v1')
+  expect(process.env.OPENAI_API_KEY).toBe('gsk_test')
+  expect(process.env.OPENAI_MODEL).toBe('llama-3.3-70b-versatile')
 })
 
 test('preserves Gemini tool call extra_content in follow-up requests', async () => {

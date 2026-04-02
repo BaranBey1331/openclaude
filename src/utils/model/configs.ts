@@ -25,6 +25,17 @@ export const GEMINI_MODEL_DEFAULTS = {
   haiku: 'gemini-2.0-flash-lite',          // fast & cheap
 } as const
 
+// ---------------------------------------------------------------------------
+// Groq model mappings
+// Maps Claude model tiers to Groq equivalents.
+// Override with GROQ_MODEL env var.
+// ---------------------------------------------------------------------------
+export const GROQ_MODEL_DEFAULTS = {
+  opus: 'openai/gpt-oss-120b',   // most capable
+  sonnet: 'qwen/qwen3-32b',       // balanced
+  haiku: 'openai/gpt-oss-20b',    // fast & cheap
+} as const
+
 // @[MODEL LAUNCH]: Add a new CLAUDE_*_CONFIG constant here. Double check the correct model strings
 // here since the pattern may change.
 
@@ -35,6 +46,7 @@ export const CLAUDE_3_7_SONNET_CONFIG = {
   foundry: 'claude-3-7-sonnet',
   openai: 'gpt-4o-mini',
   gemini: 'gemini-2.0-flash',
+  groq: 'qwen/qwen3-32b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_3_5_V2_SONNET_CONFIG = {
@@ -44,6 +56,7 @@ export const CLAUDE_3_5_V2_SONNET_CONFIG = {
   foundry: 'claude-3-5-sonnet',
   openai: 'gpt-4o-mini',
   gemini: 'gemini-2.0-flash',
+  groq: 'qwen/qwen3-32b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_3_5_HAIKU_CONFIG = {
@@ -53,6 +66,7 @@ export const CLAUDE_3_5_HAIKU_CONFIG = {
   foundry: 'claude-3-5-haiku',
   openai: 'gpt-4o-mini',
   gemini: 'gemini-2.0-flash-lite',
+  groq: 'openai/gpt-oss-20b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_HAIKU_4_5_CONFIG = {
@@ -62,6 +76,7 @@ export const CLAUDE_HAIKU_4_5_CONFIG = {
   foundry: 'claude-haiku-4-5',
   openai: 'gpt-4o-mini',
   gemini: 'gemini-2.0-flash-lite',
+  groq: 'openai/gpt-oss-20b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_SONNET_4_CONFIG = {
@@ -71,6 +86,7 @@ export const CLAUDE_SONNET_4_CONFIG = {
   foundry: 'claude-sonnet-4',
   openai: 'gpt-4o-mini',
   gemini: 'gemini-2.0-flash',
+  groq: 'qwen/qwen3-32b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_SONNET_4_5_CONFIG = {
@@ -80,6 +96,7 @@ export const CLAUDE_SONNET_4_5_CONFIG = {
   foundry: 'claude-sonnet-4-5',
   openai: 'gpt-4o',
   gemini: 'gemini-2.0-flash',
+  groq: 'qwen/qwen3-32b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_OPUS_4_CONFIG = {
@@ -89,6 +106,7 @@ export const CLAUDE_OPUS_4_CONFIG = {
   foundry: 'claude-opus-4',
   openai: 'gpt-4o',
   gemini: 'gemini-2.5-pro-preview-03-25',
+  groq: 'openai/gpt-oss-120b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_OPUS_4_1_CONFIG = {
@@ -98,6 +116,7 @@ export const CLAUDE_OPUS_4_1_CONFIG = {
   foundry: 'claude-opus-4-1',
   openai: 'gpt-4o',
   gemini: 'gemini-2.5-pro-preview-03-25',
+  groq: 'openai/gpt-oss-120b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_OPUS_4_5_CONFIG = {
@@ -107,6 +126,7 @@ export const CLAUDE_OPUS_4_5_CONFIG = {
   foundry: 'claude-opus-4-5',
   openai: 'gpt-4o',
   gemini: 'gemini-2.5-pro-preview-03-25',
+  groq: 'openai/gpt-oss-120b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_OPUS_4_6_CONFIG = {
@@ -116,6 +136,7 @@ export const CLAUDE_OPUS_4_6_CONFIG = {
   foundry: 'claude-opus-4-6',
   openai: 'gpt-4o',
   gemini: 'gemini-2.5-pro-preview-03-25',
+  groq: 'openai/gpt-oss-120b',
 } as const satisfies ModelConfig
 
 export const CLAUDE_SONNET_4_6_CONFIG = {
@@ -125,6 +146,7 @@ export const CLAUDE_SONNET_4_6_CONFIG = {
   foundry: 'claude-sonnet-4-6',
   openai: 'gpt-4o',
   gemini: 'gemini-2.0-flash',
+  groq: 'qwen/qwen3-32b',
 } as const satisfies ModelConfig
 
 // @[MODEL LAUNCH]: Register the new config here.

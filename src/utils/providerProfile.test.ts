@@ -9,6 +9,7 @@ import {
   buildAtomicChatProfileEnv,
   buildCodexProfileEnv,
   buildGeminiProfileEnv,
+  buildGroqProfileEnv,
   buildLaunchEnv,
   buildOllamaProfileEnv,
   buildOpenAIProfileEnv,
@@ -191,6 +192,55 @@ test('gemini launch ignores mismatched persisted openai env and strips other pro
   assert.equal(env.CHATGPT_ACCOUNT_ID, undefined)
 })
 
+test('matching persisted groq env is reused for groq launch', async () => {
+  const env = await buildLaunchEnv({
+    profile: 'groq',
+    persisted: profile('groq', {
+      GROQ_MODEL: 'llama-3.3-70b-versatile',
+      GROQ_API_KEY: 'gsk_persisted',
+      GROQ_BASE_URL: 'https://example.test/v1',
+    }),
+    goal: 'balanced',
+    processEnv: {},
+  })
+
+  assert.equal(env.CLAUDE_CODE_USE_GROQ, '1')
+  assert.equal(env.CLAUDE_CODE_USE_OPENAI, undefined)
+  assert.equal(env.GROQ_MODEL, 'llama-3.3-70b-versatile')
+  assert.equal(env.GROQ_API_KEY, 'gsk_persisted')
+  assert.equal(env.GROQ_BASE_URL, 'https://example.test/v1')
+})
+
+test('groq launch ignores mismatched persisted openai env and strips other provider secrets', async () => {
+  const env = await buildLaunchEnv({
+    profile: 'groq',
+    persisted: profile('openai', {
+      OPENAI_BASE_URL: 'https://api.openai.com/v1',
+      OPENAI_MODEL: 'gpt-4o',
+      OPENAI_API_KEY: 'sk-persisted',
+    }),
+    goal: 'balanced',
+    processEnv: {
+      GROQ_API_KEY: 'gsk_live',
+      OPENAI_API_KEY: 'sk-live',
+      OPENAI_BASE_URL: 'https://api.openai.com/v1',
+      OPENAI_MODEL: 'gpt-4o-mini',
+      CODEX_API_KEY: 'codex-live',
+      CHATGPT_ACCOUNT_ID: 'acct_live',
+      CLAUDE_CODE_USE_OPENAI: '1',
+    },
+  })
+
+  assert.equal(env.CLAUDE_CODE_USE_GROQ, '1')
+  assert.equal(env.CLAUDE_CODE_USE_OPENAI, undefined)
+  assert.equal(env.GROQ_MODEL, 'qwen/qwen3-32b')
+  assert.equal(env.GROQ_API_KEY, 'gsk_live')
+  assert.equal(env.GROQ_BASE_URL, 'https://api.groq.com/openai/v1')
+  assert.equal(env.OPENAI_API_KEY, undefined)
+  assert.equal(env.CODEX_API_KEY, undefined)
+  assert.equal(env.CHATGPT_ACCOUNT_ID, undefined)
+})
+
 test('matching persisted codex env is reused for codex launch', async () => {
   const env = await buildLaunchEnv({
     profile: 'codex',
@@ -368,6 +418,26 @@ test('gemini profiles require a key', () => {
   assert.equal(env, null)
 })
 
+test('groq profiles require a key', () => {
+  const env = buildGroqProfileEnv({
+    processEnv: {},
+  })
+
+  assert.equal(env, null)
+})
+
+test('groq profiles accept explicit apiKey', () => {
+  const env = buildGroqProfileEnv({
+    apiKey: 'gsk_live',
+    processEnv: {},
+  })
+
+  assert.deepEqual(env, {
+    GROQ_MODEL: 'qwen/qwen3-32b',
+    GROQ_API_KEY: 'gsk_live',
+  })
+})
+
 test('saveProfileFile writes a profile that loadProfileFile can read back', () => {
   const cwd = mkdtempSync(join(tmpdir(), 'openclaude-profile-file-'))
 
@@ -403,6 +473,21 @@ test('buildStartupEnvFromProfile applies persisted gemini settings when no provi
   assert.equal(env.CLAUDE_CODE_USE_OPENAI, undefined)
   assert.equal(env.GEMINI_API_KEY, 'gem-test')
   assert.equal(env.GEMINI_MODEL, 'gemini-2.5-flash')
+})
+
+test('buildStartupEnvFromProfile applies persisted groq settings when no provider is explicitly selected', async () => {
+  const env = await buildStartupEnvFromProfile({
+    persisted: profile('groq', {
+      GROQ_API_KEY: 'gsk-test',
+      GROQ_MODEL: 'llama-3.3-70b-versatile',
+    }),
+    processEnv: {},
+  })
+
+  assert.equal(env.CLAUDE_CODE_USE_GROQ, '1')
+  assert.equal(env.CLAUDE_CODE_USE_OPENAI, undefined)
+  assert.equal(env.GROQ_API_KEY, 'gsk-test')
+  assert.equal(env.GROQ_MODEL, 'llama-3.3-70b-versatile')
 })
 
 test('buildStartupEnvFromProfile leaves explicit provider selections untouched', async () => {
@@ -446,6 +531,7 @@ test('buildStartupEnvFromProfile treats explicit falsey provider flags as user i
 test('maskSecretForDisplay preserves only a short prefix and suffix', () => {
   assert.equal(maskSecretForDisplay('sk-secret-12345678'), 'sk-...5678')
   assert.equal(maskSecretForDisplay('AIzaSecret12345678'), 'AIza...5678')
+  assert.equal(maskSecretForDisplay('gsk_secret12345678'), 'gsk_...5678')
 })
 
 test('redactSecretValueForDisplay masks poisoned display fields that equal configured secrets', () => {

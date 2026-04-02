@@ -6,22 +6,25 @@ import {
   isCodexBaseUrl,
   resolveCodexApiCredentials,
   resolveProviderRequest,
-} from '../services/api/providerConfig.ts'
+} from '../services/api/providerConfig.js'
 import {
   getGoalDefaultOpenAIModel,
   normalizeRecommendationGoal,
   type RecommendationGoal,
-} from './providerRecommendation.ts'
-import { getOllamaChatBaseUrl } from './providerDiscovery.ts'
+} from './providerRecommendation.js'
+import { getOllamaChatBaseUrl } from './providerDiscovery.js'
 
 export const PROFILE_FILE_NAME = '.openclaude-profile.json'
 export const DEFAULT_GEMINI_BASE_URL =
   'https://generativelanguage.googleapis.com/v1beta/openai'
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash'
+export const DEFAULT_GROQ_BASE_URL = 'https://api.groq.com/openai/v1'
+export const DEFAULT_GROQ_MODEL = 'qwen/qwen3-32b'
 
 const PROFILE_ENV_KEYS = [
   'CLAUDE_CODE_USE_OPENAI',
   'CLAUDE_CODE_USE_GEMINI',
+  'CLAUDE_CODE_USE_GROQ',
   'CLAUDE_CODE_USE_BEDROCK',
   'CLAUDE_CODE_USE_VERTEX',
   'CLAUDE_CODE_USE_FOUNDRY',
@@ -35,6 +38,9 @@ const PROFILE_ENV_KEYS = [
   'GEMINI_MODEL',
   'GEMINI_BASE_URL',
   'GOOGLE_API_KEY',
+  'GROQ_API_KEY',
+  'GROQ_MODEL',
+  'GROQ_BASE_URL',
 ] as const
 
 const SECRET_ENV_KEYS = [
@@ -42,9 +48,10 @@ const SECRET_ENV_KEYS = [
   'CODEX_API_KEY',
   'GEMINI_API_KEY',
   'GOOGLE_API_KEY',
+  'GROQ_API_KEY',
 ] as const
 
-export type ProviderProfile = 'openai' | 'ollama' | 'codex' | 'gemini' | 'atomic-chat'
+export type ProviderProfile = 'openai' | 'ollama' | 'codex' | 'gemini' | 'atomic-chat' | 'groq'
 
 export type ProfileEnv = {
   OPENAI_BASE_URL?: string
@@ -56,6 +63,9 @@ export type ProfileEnv = {
   GEMINI_API_KEY?: string
   GEMINI_MODEL?: string
   GEMINI_BASE_URL?: string
+  GROQ_API_KEY?: string
+  GROQ_MODEL?: string
+  GROQ_BASE_URL?: string
 }
 
 export type ProfileFile = {
@@ -90,7 +100,8 @@ export function isProviderProfile(value: unknown): value is ProviderProfile {
     value === 'ollama' ||
     value === 'codex' ||
     value === 'gemini' ||
-    value === 'atomic-chat'
+    value === 'atomic-chat' ||
+    value === 'groq'
   )
 }
 
@@ -105,7 +116,7 @@ function looksLikeSecretValue(value: string): boolean {
   const trimmed = value.trim()
   if (!trimmed) return false
 
-  if (trimmed.startsWith('sk-') || trimmed.startsWith('sk-ant-')) {
+  if (trimmed.startsWith('sk-') || trimmed.startsWith('sk-ant-') || trimmed.startsWith('gsk_')) {
     return true
   }
 
@@ -145,8 +156,8 @@ export function maskSecretForDisplay(
     return 'configured'
   }
 
-  if (sanitized.startsWith('sk-')) {
-    return `${sanitized.slice(0, 3)}...${sanitized.slice(-4)}`
+  if (sanitized.startsWith('sk-') || sanitized.startsWith('gsk_')) {
+    return `${sanitized.slice(0, sanitized.startsWith('gsk_') ? 4 : 3)}...${sanitized.slice(-4)}`
   }
 
   if (sanitized.startsWith('AIza')) {
@@ -253,6 +264,44 @@ export function buildGeminiProfileEnv(options: {
     )
   if (baseUrl) {
     env.GEMINI_BASE_URL = baseUrl
+  }
+
+  return env
+}
+
+export function buildGroqProfileEnv(options: {
+  model?: string | null
+  baseUrl?: string | null
+  apiKey?: string | null
+  processEnv?: NodeJS.ProcessEnv
+}): ProfileEnv | null {
+  const processEnv = options.processEnv ?? process.env
+  const key = sanitizeApiKey(options.apiKey ?? processEnv.GROQ_API_KEY)
+  if (!key) {
+    return null
+  }
+
+  const env: ProfileEnv = {
+    GROQ_MODEL:
+      sanitizeProviderConfigValue(options.model, { GROQ_API_KEY: key }, processEnv) ||
+      sanitizeProviderConfigValue(
+        processEnv.GROQ_MODEL,
+        { GROQ_API_KEY: key },
+        processEnv,
+      ) ||
+      DEFAULT_GROQ_MODEL,
+    GROQ_API_KEY: key,
+  }
+
+  const baseUrl =
+    sanitizeProviderConfigValue(options.baseUrl, { GROQ_API_KEY: key }, processEnv) ||
+    sanitizeProviderConfigValue(
+      processEnv.GROQ_BASE_URL,
+      { GROQ_API_KEY: key },
+      processEnv,
+    )
+  if (baseUrl) {
+    env.GROQ_BASE_URL = baseUrl
   }
 
   return env
@@ -401,6 +450,7 @@ export function hasExplicitProviderSelection(
     processEnv.CLAUDE_CODE_USE_OPENAI !== undefined ||
     processEnv.CLAUDE_CODE_USE_GITHUB !== undefined ||
     processEnv.CLAUDE_CODE_USE_GEMINI !== undefined ||
+    processEnv.CLAUDE_CODE_USE_GROQ !== undefined ||
     processEnv.CLAUDE_CODE_USE_BEDROCK !== undefined ||
     processEnv.CLAUDE_CODE_USE_VERTEX !== undefined ||
     processEnv.CLAUDE_CODE_USE_FOUNDRY !== undefined
@@ -466,6 +516,25 @@ export async function buildLaunchEnv(options: {
   )
   const persistedGeminiKey = sanitizeApiKey(persistedEnv.GEMINI_API_KEY)
 
+  const persistedGroqModel = sanitizeProviderConfigValue(
+    persistedEnv.GROQ_MODEL,
+    persistedEnv,
+  )
+  const persistedGroqBaseUrl = sanitizeProviderConfigValue(
+    persistedEnv.GROQ_BASE_URL,
+    persistedEnv,
+  )
+  const shellGroqModel = sanitizeProviderConfigValue(
+    processEnv.GROQ_MODEL,
+    processEnv,
+  )
+  const shellGroqBaseUrl = sanitizeProviderConfigValue(
+    processEnv.GROQ_BASE_URL,
+    processEnv,
+  )
+  const shellGroqKey = sanitizeApiKey(processEnv.GROQ_API_KEY)
+  const persistedGroqKey = sanitizeApiKey(persistedEnv.GROQ_API_KEY)
+
   if (options.profile === 'gemini') {
     const env: NodeJS.ProcessEnv = {
       ...processEnv,
@@ -474,6 +543,7 @@ export async function buildLaunchEnv(options: {
 
     delete env.CLAUDE_CODE_USE_OPENAI
     delete env.CLAUDE_CODE_USE_GITHUB
+    delete env.CLAUDE_CODE_USE_GROQ
 
     env.GEMINI_MODEL =
       shellGeminiModel ||
@@ -498,6 +568,49 @@ export async function buildLaunchEnv(options: {
     delete env.CODEX_API_KEY
     delete env.CHATGPT_ACCOUNT_ID
     delete env.CODEX_ACCOUNT_ID
+    delete env.GROQ_API_KEY
+    delete env.GROQ_MODEL
+    delete env.GROQ_BASE_URL
+
+    return env
+  }
+
+  if (options.profile === 'groq') {
+    const env: NodeJS.ProcessEnv = {
+      ...processEnv,
+      CLAUDE_CODE_USE_GROQ: '1',
+    }
+
+    delete env.CLAUDE_CODE_USE_OPENAI
+    delete env.CLAUDE_CODE_USE_GITHUB
+    delete env.CLAUDE_CODE_USE_GEMINI
+
+    env.GROQ_MODEL =
+      shellGroqModel ||
+      persistedGroqModel ||
+      DEFAULT_GROQ_MODEL
+    env.GROQ_BASE_URL =
+      shellGroqBaseUrl ||
+      persistedGroqBaseUrl ||
+      DEFAULT_GROQ_BASE_URL
+
+    const groqKey = shellGroqKey || persistedGroqKey
+    if (groqKey) {
+      env.GROQ_API_KEY = groqKey
+    } else {
+      delete env.GROQ_API_KEY
+    }
+
+    delete env.OPENAI_BASE_URL
+    delete env.OPENAI_MODEL
+    delete env.OPENAI_API_KEY
+    delete env.GEMINI_API_KEY
+    delete env.GEMINI_MODEL
+    delete env.GEMINI_BASE_URL
+    delete env.GOOGLE_API_KEY
+    delete env.CODEX_API_KEY
+    delete env.CHATGPT_ACCOUNT_ID
+    delete env.CODEX_ACCOUNT_ID
 
     return env
   }
@@ -509,10 +622,14 @@ export async function buildLaunchEnv(options: {
 
   delete env.CLAUDE_CODE_USE_GEMINI
   delete env.CLAUDE_CODE_USE_GITHUB
+  delete env.CLAUDE_CODE_USE_GROQ
   delete env.GEMINI_API_KEY
   delete env.GEMINI_MODEL
   delete env.GEMINI_BASE_URL
   delete env.GOOGLE_API_KEY
+  delete env.GROQ_API_KEY
+  delete env.GROQ_MODEL
+  delete env.GROQ_BASE_URL
 
   if (options.profile === 'ollama') {
     const getOllamaBaseUrl =
