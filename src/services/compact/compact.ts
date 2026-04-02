@@ -611,6 +611,13 @@ export async function compactConversation(
     }
 
     const transcriptPath = getTranscriptPath()
+    // Calculate estimated saved tokens
+    const estPostTokens = roughTokenCountEstimationForMessages([
+      boundaryMarker,
+      ...postCompactFileAttachments,
+      ...hookMessages,
+    ]) + roughTokenCountEstimation(summary || '');
+    const savedTokens = Math.max(0, (preCompactTokenCount ?? 0) - estPostTokens);
     const summaryMessages: UserMessage[] = [
       createUserMessage({
         content: getCompactUserSummaryMessage(
@@ -620,6 +627,7 @@ export async function compactConversation(
         ),
         isCompactSummary: true,
         isVisibleInTranscriptOnly: true,
+        userDisplayMessage: `✨ Compacted session: ~${formatNumber(savedTokens)} tokens saved.`,
       }),
     ]
 
@@ -1028,10 +1036,18 @@ export async function partialCompactConversation(
     }
 
     const transcriptPath = getTranscriptPath()
+    // Calculate estimated saved tokens
+    const estPostTokens = roughTokenCountEstimationForMessages([
+      boundaryMarker,
+      ...postCompactFileAttachments,
+      ...hookMessages,
+    ]) + roughTokenCountEstimation(summary || '');
+    const savedTokens = Math.max(0, (preCompactTokenCount ?? 0) - estPostTokens);
     const summaryMessages: UserMessage[] = [
       createUserMessage({
         content: getCompactUserSummaryMessage(summary, false, transcriptPath),
         isCompactSummary: true,
+        userDisplayMessage: `✨ Compacted session: ~${formatNumber(savedTokens)} tokens saved.`,
         ...(messagesToKeep.length > 0
           ? {
               summarizeMetadata: {
