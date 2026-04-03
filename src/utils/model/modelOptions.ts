@@ -290,6 +290,11 @@ function getCodexModelOptions(): ModelOption[] {
       description: 'GPT-5.4 with high reasoning',
     },
     {
+      value: 'gpt-5.4-mini',
+      label: 'gpt-5.4-mini',
+      description: 'GPT-5.4 Mini - faster, cheaper',
+    },
+    {
       value: 'gpt-5.3-codex',
       label: 'gpt-5.3-codex',
       description: 'GPT-5.3 Codex with high reasoning',
@@ -310,6 +315,11 @@ function getCodexModelOptions(): ModelOption[] {
       description: 'GPT-5.2 Codex with high reasoning',
     },
     {
+      value: 'gpt-5.2',
+      label: 'gpt-5.2',
+      description: 'GPT-5.2 with medium reasoning',
+    },
+    {
       value: 'gpt-5.1-codex-max',
       label: 'gpt-5.1-codex-max',
       description: 'GPT-5.1 Codex Max for deep reasoning',
@@ -318,11 +328,6 @@ function getCodexModelOptions(): ModelOption[] {
       value: 'gpt-5.1-codex-mini',
       label: 'gpt-5.1-codex-mini',
       description: 'GPT-5.1 Codex Mini - faster, cheaper',
-    },
-    {
-      value: 'gpt-5.4-mini',
-      label: 'gpt-5.4-mini',
-      description: 'GPT-5.4 Mini - faster, cheaper',
     },
   ]
 }

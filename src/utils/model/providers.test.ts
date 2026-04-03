@@ -12,6 +12,7 @@ const originalEnv = {
   CLAUDE_CODE_USE_BEDROCK: process.env.CLAUDE_CODE_USE_BEDROCK,
   CLAUDE_CODE_USE_VERTEX: process.env.CLAUDE_CODE_USE_VERTEX,
   CLAUDE_CODE_USE_FOUNDRY: process.env.CLAUDE_CODE_USE_FOUNDRY,
+  OPENAI_MODEL: process.env.OPENAI_MODEL,
 }
 
 afterEach(() => {
@@ -21,6 +22,7 @@ afterEach(() => {
   process.env.CLAUDE_CODE_USE_BEDROCK = originalEnv.CLAUDE_CODE_USE_BEDROCK
   process.env.CLAUDE_CODE_USE_VERTEX = originalEnv.CLAUDE_CODE_USE_VERTEX
   process.env.CLAUDE_CODE_USE_FOUNDRY = originalEnv.CLAUDE_CODE_USE_FOUNDRY
+  process.env.OPENAI_MODEL = originalEnv.OPENAI_MODEL
 })
 
 function clearProviderEnv(): void {
@@ -30,6 +32,7 @@ function clearProviderEnv(): void {
   delete process.env.CLAUDE_CODE_USE_BEDROCK
   delete process.env.CLAUDE_CODE_USE_VERTEX
   delete process.env.CLAUDE_CODE_USE_FOUNDRY
+  delete process.env.OPENAI_MODEL
 }
 
 test('first-party provider keeps Anthropic account setup flow enabled', () => {
@@ -63,4 +66,16 @@ test('GEMINI takes precedence over GitHub when both are set', () => {
   process.env.CLAUDE_CODE_USE_GITHUB = '1'
 
   expect(getAPIProvider()).toBe('gemini')
+})
+
+test.each([
+  'gpt-5.4-mini',
+  'gpt-5.2',
+] as const)('OPENAI model %s is treated as codex provider', model => {
+  clearProviderEnv()
+  process.env.CLAUDE_CODE_USE_OPENAI = '1'
+  process.env.OPENAI_MODEL = model
+
+  expect(getAPIProvider()).toBe('codex')
+  expect(usesAnthropicAccountFlow()).toBe(false)
 })

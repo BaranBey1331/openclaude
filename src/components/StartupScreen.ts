@@ -117,14 +117,14 @@ function detectProvider(): { name: string; model: string; baseUrl: string; isLoc
     const codexAliases: Record<string, { model: string; reasoningEffort?: string }> = {
       codexplan: { model: 'gpt-5.4', reasoningEffort: 'high' },
       'gpt-5.4': { model: 'gpt-5.4', reasoningEffort: 'high' },
+      'gpt-5.4-mini': { model: 'gpt-5.4-mini', reasoningEffort: 'medium' },
       'gpt-5.3-codex': { model: 'gpt-5.3-codex', reasoningEffort: 'high' },
       'gpt-5.3-codex-spark': { model: 'gpt-5.3-codex-spark' },
       codexspark: { model: 'gpt-5.3-codex-spark' },
       'gpt-5.2-codex': { model: 'gpt-5.2-codex', reasoningEffort: 'high' },
+      'gpt-5.2': { model: 'gpt-5.2', reasoningEffort: 'medium' },
       'gpt-5.1-codex-max': { model: 'gpt-5.1-codex-max', reasoningEffort: 'high' },
       'gpt-5.1-codex-mini': { model: 'gpt-5.1-codex-mini' },
-      'gpt-5.4-mini': { model: 'gpt-5.4-mini', reasoningEffort: 'medium' },
-      'gpt-5.2': { model: 'gpt-5.2', reasoningEffort: 'medium' },
     }
     const alias = rawModel.toLowerCase()
     if (alias in codexAliases) {

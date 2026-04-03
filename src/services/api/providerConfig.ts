@@ -25,6 +25,10 @@ const CODEX_ALIAS_MODELS: Record<
     model: 'gpt-5.4',
     reasoningEffort: 'high',
   },
+  'gpt-5.4-mini': {
+    model: 'gpt-5.4-mini',
+    reasoningEffort: 'medium',
+  },
   'gpt-5.3-codex': {
     model: 'gpt-5.3-codex',
     reasoningEffort: 'high',
@@ -39,20 +43,16 @@ const CODEX_ALIAS_MODELS: Record<
     model: 'gpt-5.2-codex',
     reasoningEffort: 'high',
   },
+  'gpt-5.2': {
+    model: 'gpt-5.2',
+    reasoningEffort: 'medium',
+  },
   'gpt-5.1-codex-max': {
     model: 'gpt-5.1-codex-max',
     reasoningEffort: 'high',
   },
   'gpt-5.1-codex-mini': {
     model: 'gpt-5.1-codex-mini',
-  },
-  'gpt-5.4-mini': {
-    model: 'gpt-5.4-mini',
-    reasoningEffort: 'medium',
-  },
-  'gpt-5.2': {
-    model: 'gpt-5.2',
-    reasoningEffort: 'medium',
   },
 } as const
 
