@@ -21,6 +21,14 @@ export const READ_FILE_STATE_CACHE_SIZE = 100
 // This prevents unbounded memory growth from large file contents
 const DEFAULT_MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024
 
+// Cache entry overhead (path key + metadata) to make maxSize accounting closer
+// to real memory usage and avoid under-eviction when many small files are read.
+const DEFAULT_ENTRY_OVERHEAD_BYTES = 128
+
+// Expire stale read-file entries after 30 minutes by default.
+// This keeps long-running sessions from accumulating stale read state forever.
+const DEFAULT_CACHE_TTL_MS = 30 * 60 * 1000
+
 /**
  * A file state cache that normalizes all path keys before access.
  * This ensures consistent cache hits regardless of whether callers pass
@@ -29,12 +37,36 @@ const DEFAULT_MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024
  */
 export class FileStateCache {
   private cache: LRUCache<string, FileState>
+  private readonly ttlMs: number
 
-  constructor(maxEntries: number, maxSizeBytes: number) {
-    this.cache = new LRUCache<string, FileState>({
+  constructor(
+    maxEntries: number,
+    maxSizeBytes: number,
+    ttlMs: number = DEFAULT_CACHE_TTL_MS,
+  ) {
+    this.ttlMs = ttlMs
+
+    const cacheOptions: ConstructorParameters<typeof LRUCache<string, FileState>>[0] = {
       max: maxEntries,
       maxSize: maxSizeBytes,
-      sizeCalculation: value => Math.max(1, Buffer.byteLength(value.content)),
+      sizeCalculation: (value, key) =>
+        Math.max(
+          1,
+          Buffer.byteLength(value.content) +
+            Buffer.byteLength(key) +
+            DEFAULT_ENTRY_OVERHEAD_BYTES,
+        ),
+    }
+
+    if (ttlMs > 0) {
+      cacheOptions.ttl = ttlMs
+      cacheOptions.ttlAutopurge = true
+      cacheOptions.updateAgeOnGet = true
+      cacheOptions.updateAgeOnHas = true
+    }
+
+    this.cache = new LRUCache<string, FileState>({
+      ...cacheOptions,
     })
   }
 
@@ -71,6 +103,10 @@ export class FileStateCache {
     return this.cache.maxSize
   }
 
+  get ttl(): number {
+    return this.ttlMs
+  }
+
   get calculatedSize(): number {
     return this.cache.calculatedSize
   }
@@ -101,8 +137,9 @@ export class FileStateCache {
 export function createFileStateCacheWithSizeLimit(
   maxEntries: number,
   maxSizeBytes: number = DEFAULT_MAX_CACHE_SIZE_BYTES,
+  ttlMs: number = DEFAULT_CACHE_TTL_MS,
 ): FileStateCache {
-  return new FileStateCache(maxEntries, maxSizeBytes)
+  return new FileStateCache(maxEntries, maxSizeBytes, ttlMs)
 }
 
 // Helper function to convert cache to object (used by compact.ts)
@@ -120,7 +157,11 @@ export function cacheKeys(cache: FileStateCache): string[] {
 // Helper function to clone a FileStateCache
 // Preserves size limit configuration from the source cache
 export function cloneFileStateCache(cache: FileStateCache): FileStateCache {
-  const cloned = createFileStateCacheWithSizeLimit(cache.max, cache.maxSize)
+  const cloned = createFileStateCacheWithSizeLimit(
+    cache.max,
+    cache.maxSize,
+    cache.ttl,
+  )
   cloned.load(cache.dump())
   return cloned
 }
