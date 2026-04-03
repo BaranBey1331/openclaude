@@ -139,6 +139,31 @@ For best results, use models with strong tool/function calling support.
 
 ---
 
+## Token Saver Mode (Cost Optimization)
+
+If you want lower token spend with similar behavior, enable token saver mode:
+
+```bash
+export OPENCLAUDE_TOKEN_SAVER=1
+```
+
+What it does:
+
+- enables message-level large tool-result budgeting by default
+- keeps huge tool outputs on disk and sends compact previews to the model
+
+Optional tuning:
+
+```bash
+export OPENCLAUDE_TOOL_RESULT_BUDGET_CHARS=120000
+```
+
+- lower value: lower cost, more aggressive compression
+- higher value: more raw tool output in context
+- default in token saver mode: `120000`
+
+---
+
 ## Web Search and Fetch
 
 `WebFetch` works out of the box.

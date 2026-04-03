@@ -18,6 +18,7 @@ import { sanitizeToolNameForAnalytics } from '../services/analytics/metadata.js'
 import type { Message } from '../types/message.js'
 import { logForDebugging } from './debug.js'
 import { getErrnoCode, toError } from './errors.js'
+import { isEnvTruthy } from './envUtils.js'
 import { formatFileSize } from './format.js'
 import { logError } from './log.js'
 import { getProjectDir } from './sessionStorage.js'
@@ -41,6 +42,26 @@ export const TOOL_RESULT_CLEARED_MESSAGE = '[Old tool result content cleared]'
  * Flag default is {} (no overrides == behavior unchanged).
  */
 const PERSIST_THRESHOLD_OVERRIDE_FLAG = 'tengu_satin_quoll'
+
+const TOOL_RESULT_BUDGET_ENV = 'OPENCLAUDE_TOOL_RESULT_BUDGET_CHARS'
+const TOKEN_SAVER_ENV = 'OPENCLAUDE_TOKEN_SAVER'
+const TOKEN_SAVER_ENV_ALIAS = 'CLAUDE_CODE_TOKEN_SAVER'
+export const TOKEN_SAVER_DEFAULT_TOOL_RESULT_BUDGET_CHARS = 120_000
+
+function getPositiveIntegerFromEnv(envVarName: string): number | undefined {
+  const raw = process.env[envVarName]
+  if (!raw) return undefined
+  const parsed = Number.parseInt(raw, 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined
+  return parsed
+}
+
+function isTokenSaverModeEnabled(): boolean {
+  return (
+    isEnvTruthy(process.env[TOKEN_SAVER_ENV]) ||
+    isEnvTruthy(process.env[TOKEN_SAVER_ENV_ALIAS])
+  )
+}
 
 /**
  * Resolve the effective persistence threshold for a tool.
@@ -419,6 +440,15 @@ export function cloneContentReplacementState(
  * so a flag served as null/string/NaN leaks through.
  */
 export function getPerMessageBudgetLimit(): number {
+  const envOverride = getPositiveIntegerFromEnv(TOOL_RESULT_BUDGET_ENV)
+  if (envOverride !== undefined) {
+    return envOverride
+  }
+
+  if (isTokenSaverModeEnabled()) {
+    return TOKEN_SAVER_DEFAULT_TOOL_RESULT_BUDGET_CHARS
+  }
+
   const override = getFeatureValue_CACHED_MAY_BE_STALE<number | null>(
     'tengu_hawthorn_window',
     null,
@@ -448,10 +478,9 @@ export function provisionContentReplacementState(
   initialMessages?: Message[],
   initialContentReplacements?: ContentReplacementRecord[],
 ): ContentReplacementState | undefined {
-  const enabled = getFeatureValue_CACHED_MAY_BE_STALE(
-    'tengu_hawthorn_steeple',
-    false,
-  )
+  const enabled =
+    isTokenSaverModeEnabled() ||
+    getFeatureValue_CACHED_MAY_BE_STALE('tengu_hawthorn_steeple', false)
   if (!enabled) return undefined
   if (initialMessages) {
     return reconstructContentReplacementState(
