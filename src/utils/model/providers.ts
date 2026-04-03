@@ -38,9 +38,11 @@ function isCodexModel(): boolean {
     model === 'codexplan' ||
     model === 'codexspark' ||
     model === 'gpt-5.4' ||
+    model === 'gpt-5.4-mini' ||
     model === 'gpt-5.3-codex' ||
     model === 'gpt-5.3-codex-spark' ||
     model === 'gpt-5.2-codex' ||
+    model === 'gpt-5.2' ||
     model === 'gpt-5.1-codex-max' ||
     model === 'gpt-5.1-codex-mini'
   )
